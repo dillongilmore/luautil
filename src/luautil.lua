@@ -1,17 +1,140 @@
-#!/usr/bin/env lua
+-- Copyright (c) 2013 Dillon Gilmore <dillon@gilm.re>
+--
+-- This file is part of luautil.
 
+-- Luautil is free software: you can redistribute it and/or modify
+-- it under the terms of the GNU General Public License as published by
+-- the Free Software Foundation, either version 3 of the License, or
+-- (at your option) any later version.
+
+-- Luautil is distributed in the hope that it will be useful,
+-- but WITHOUT ANY WARRANTY; without even the implied warranty of
+-- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.--See the
+-- GNU General Public License for more details.
+
+-- You should have received a copy of the GNU General Public License
+-- along with luautil.  If not, see <http://www.gnu.org/licenses/>.
+
+--- Luautil is a collection of utility functions
+-- @author Dillon Gilmore <dillon@gilm.re>
+-- @copyright GNU GPLv3
+
+--- luautil's version
+-- @return string - the version
 function VERSION()
-	print "1.0.0-1"
+	print "1.0.1-1"
 end
 
-function each(obj, iterator)
+local luautil = {}
+luautil.__index = luautil
+
+--- luautil's constructor function
+-- @param init
+-- @return luautil metatable
+function luautil:new(val)
+	return setmetatable({_val = val}, self)
+end
+
+--- immutability is important
+-- people should expect this to work the same all the time
+function luautil.__newindex(...)
+	error("This is a static library, please use the functions provided.")
+end
+
+--- Provide the basic necessities for using the luautil object as any
+-- other basic type: number, string, boolean, nil
+
+--- Get the length of the string if the object is one
+-- @usage #my_util_string
+-- @return number
+function luautil:__len()
+	return #self._val
+end
+
+--- If the current value is a string or number then return it
+-- @return number or string
+function luautil:__tostring()
+	if (type(self._val) == "string" or type(self._val) == "number") then
+		return luautil._val
+	end
+end
+
+function luautil:__concat()
+	if (type(self._val) == "string" or type(self._val) == "number") then
+		return luautil._val
+	end
+end
+
+function luautil:__unm()
+	if (type(self._val == "number")) then
+		return -self._val
+	end
+end
+
+function luautil:__add(num)
+	if (type(num) == "string" or type(num) == "number") then
+		return self._val + num
+	end
+end
+
+function luautil:__sub(num)
+	if (type(num) == "string" or type(num) == "number") then
+		return self._val - num
+	end
+end
+
+function luautil:__mul(num)
+	if (type(num) == "string" or type(num) == "number") then
+		return self._val * num
+	end
+end
+
+function luautil:__mod(num)
+	if (type(num) == "string" or type(num) == "number") then
+		return self._val % num
+	end
+end
+
+function luautil:__pow(num)
+	if (type(num) == "string" or type(num) == "number") then
+		return self._val ^ num
+	end
+end
+
+function luautil:__lt(num)
+	if (type(num) == "string" or type(num) == "number") then
+		return self._val < num
+	end
+end
+
+function luautil:__le(num)
+	if (type(num) == "string" or type(num) == "number") then
+		return self._val <= num
+	end
+end
+
+--- Add easy meta programming by
+-- providing a way to call functions via string
+-- @usage luautil(function_name, then, the, function, parameters)
+-- @param string|function luautil:the function luautil:to be called
+-- @return - function luautil:- either the fed function's return value
+-- @return - string - luautil's implementation of said function
+function luautil:__call(fn, ...)
+	if (type(fn) == "string") then
+		return self[fn](...)
+	elseif (type(fn) == "function") then
+		return fn(...)
+	end
+end
+
+function luautil:each(obj, iterator)
 	if not obj then return end
 	for keys, item in pairs(obj) do
 		iterator(keys, item)
 	end
 end
 
-function map(obj, iterator)
+function luautil:map(obj, iterator)
 	local results = {}
 	if not obj then return results end
 	each(obj, function(keys, item)
@@ -20,7 +143,7 @@ function map(obj, iterator)
 	return results
 end
 
-function foldl(obj, iterator, memo)
+function luautil:foldl(obj, iterator, memo)
 	if not memo then memo = 0 end
 	if not obj then obj = {} end
 	each(obj, function(keys, item)
@@ -33,13 +156,13 @@ function foldl(obj, iterator, memo)
 	return memo
 end
 
-function foldr(obj, iterator, memo)
+function luautil:foldr(obj, iterator, memo)
 	if not obj then obj = {} end
 	local reversed = reverse(obj)
 	return foldl(reversed, iterator, memo)
 end
 
-function find(obj, iterator)
+function luautil:find(obj, iterator)
 	iterator = iterator or identity
 	local result
 	if not obj then return result end
@@ -52,7 +175,7 @@ function find(obj, iterator)
 	return result
 end
 
-function filter(obj, iterator)
+function luautil:filter(obj, iterator)
 	local results = {}
 	each(obj, function(keys, item)
 		if iterator(keys, item) then
@@ -62,7 +185,7 @@ function filter(obj, iterator)
 	return results
 end
 
-function reject(obj, iterator)
+function luautil:reject(obj, iterator)
 	local results = {}
 	each(obj, function(keys, item)
 		if iterator(keys, item) == false then
@@ -72,7 +195,7 @@ function reject(obj, iterator)
 	return results
 end
 
-function all(obj, iterator)
+function luautil:all(obj, iterator)
 	local result = true
 	if not obj then return result end
 	each(obj, function(keys, item)
@@ -83,7 +206,7 @@ function all(obj, iterator)
 	return true
 end
 
-function any(obj, iterator)
+function luautil:any(obj, iterator)
 	if not iterator then iterator = identity end
 	local result = false
 	if not obj then return result end
@@ -95,7 +218,7 @@ function any(obj, iterator)
 	return result
 end
 
-function include(obj, target)
+function luautil:include(obj, target)
 	local found = false
 	if obj == nil then return found end
 	found = any(obj, function(keys, item)
@@ -104,7 +227,7 @@ function include(obj, target)
 	return found
 end
 
-function invoke(obj, method, ...)
+function luautil:invoke(obj, method, ...)
 	return map(obj, function(keys, item)
 		if is_function(method) then
 			return method(item, arg)
@@ -112,7 +235,7 @@ function invoke(obj, method, ...)
 	end)
 end
 
-function pluck(obj, key)
+function luautil:pluck(obj, key)
 	return map(obj, function(keys, item)
 		if key == keys then
 			return item
@@ -120,7 +243,7 @@ function pluck(obj, key)
 	end)
 end
 
-function max(obj, memo, iterator)
+function luautil:max(obj, memo, iterator)
 	if not memo then memo = 0 end
 	if not iterator then
 		for keys, item in pairs(obj) do
@@ -134,7 +257,7 @@ function max(obj, memo, iterator)
 	return memo
 end
 
-function min(obj, memo, iterator)
+function luautil:min(obj, memo, iterator)
 	if not memo then memo = 0 end
 	if not iterator then
 		for keys, item in pairs(obj) do
@@ -148,7 +271,7 @@ function min(obj, memo, iterator)
 	return memo
 end
 
-function shuffle(obj)
+function luautil:shuffle(obj)
 	local index = 0
 	local shuffled = {}
 	each(obj, function(keys, item)
@@ -160,11 +283,11 @@ function shuffle(obj)
 	return shuffled
 end
 
-function sort_by(obj, iterator)
+function luautil:sort_by(obj, iterator)
 	print "TABLE.SORT() ALWAYS RETURN NIL"
 end
 
-function group_by(obj, iterator)
+function luautil:group_by(obj, iterator)
 	local results = {}
 	if is_function(iterator) then
 		each(obj, function(keys, item)
@@ -186,7 +309,7 @@ function group_by(obj, iterator)
 	return results
 end
 
-function sorted_index(array, obj, iterator)
+function luautil:sorted_index(array, obj, iterator)
 	if not iterator then iterator = identity end
 	local value = iterator(obj)
 	local low = 0
@@ -202,7 +325,7 @@ function sorted_index(array, obj, iterator)
 	return low
 end
 
-function totable(obj)
+function luautil:totable(obj)
 	if not obj then return {} end
 	if is_table(obj) then
 		return obj
@@ -210,7 +333,7 @@ function totable(obj)
 	return {obj}
 end
 
-function size(obj)
+function luautil:size(obj)
 	if is_table(obj) then
 		return #obj
 	else
@@ -218,7 +341,7 @@ function size(obj)
 	end
 end
 
-function first(array, n)
+function luautil:first(array, n)
 	if not n then return array[1] end
 	local results = map(array, function(keys, item)
 		if keys <= n then return item end
@@ -226,7 +349,7 @@ function first(array, n)
 	return results
 end
 
-function initial(array, n)
+function luautil:initial(array, n)
 	local len = n or 1
 	local actual = 0
 	local index = #array - len
@@ -239,7 +362,7 @@ function initial(array, n)
 	return results
 end
 
-function last(array, n)
+function luautil:last(array, n)
 	local len = n or 1
 	local index = #array - len + 1
 	local results = map(array, function(keys, item)
@@ -248,7 +371,7 @@ function last(array, n)
 	return results
 end
 
-function rest(array, index)
+function luautil:rest(array, index)
 	local init = index or 1
 	local len = init + 1
 	local results = map(array, function(keys, item)
@@ -257,13 +380,13 @@ function rest(array, index)
 	return results
 end
 
-function compact(array)
+function luautil:compact(array)
 	return filter(array, function(keys, item)
 		if item ~= nil then return item end
 	end)
 end
 
-function flat(input, output)
+function luautil:flat(input, output)
 	each(input, function(keys, item)
 		if is_table(item) then
 			flatten(item, output)
@@ -274,28 +397,28 @@ function flat(input, output)
 	return output
 end
 
-function flatten(array, memo)
+function luautil:flatten(array, memo)
 	if not memo then memo = {} end
 	return flat(array, memo)
 end
 
-function without(array)
+function luautil:without(array)
 	print("without")
 end
 
-function unique(array, sorted, iterator)
+function luautil:unique(array, sorted, iterator)
 	print("unique")
 end
 
-function union()
+function luautil:union()
 	print("union")
 end
 
-function intersection(array)
+function luautil:intersection(array)
 	print("intersection")
 end
 
-function difference(...)
+function luautil:difference(...)
 	local args = arguments(...)
 	print(select('#', ...))
 	print(arguments)
@@ -305,12 +428,12 @@ function difference(...)
 --	end)
 end
 
-function zip()
+function luautil:zip()
 	print("zip")
 end
 
--- this function has a confusing looking for loop
-function zip_object(keys, values)
+-- this function luautil:has a confusing looking for loop
+function luautil:zip_object(keys, values)
 	local results = {}
 	for keys, items in pairs(keys) do
 		results[items] = values[keys]
@@ -318,11 +441,11 @@ function zip_object(keys, values)
 	return results
 end
 
-function index_of(array, item)
+function luautil:index_of(array, item)
 	print("indexof")
 end
 
-function last_index_of(array, item)
+function luautil:last_index_of(array, item)
 	if not array then return -1 end
 	local index = #array
 	while index > 0 do
@@ -333,7 +456,7 @@ function last_index_of(array, item)
 	end
 end
 
-function range(start, stop, step)
+function luautil:range(start, stop, step)
 	local stop = stop or start or 0
 	local start = start or 0
 	local step = step or 1
@@ -353,20 +476,20 @@ function range(start, stop, step)
 	return ran
 end
 
-function bind(func)
+function luautil:bind(func)
 	print("bind")
 end
 
-function bind_all(obj)
+function luautil:bind_all(obj)
 	print("bindall")
 end
 
-function memoize(func, hasher)
+function luautil:memoize(func, hasher)
 	print("memoize")
 end
 
 -- FIXME: the delay works but i cant get the func to execute properly
-function delay(wait, func)
+function luautil:delay(wait, func)
 	local go = os.time() + wait
 	repeat
 		if os.time == go then
@@ -375,21 +498,21 @@ function delay(wait, func)
 	until os.time() > go
 end
 
-function defer(func)
+function luautil:defer(func)
 	return delay(1, func())
 end
 
 -- TODO: this is hard/complicated
-function throttle(func, wait)
+function luautil:throttle(func, wait)
 	print("throttle")
 end
 
-function debounce(func, wait, immediate)
+function luautil:debounce(func, wait, immediate)
 	print("debounce")
 end
 
 -- FIXME: same problem as delay
-function once(func)
+function luautil:once(func)
 	local ran = false
 	return function()
 		if ran then return end
@@ -398,14 +521,14 @@ function once(func)
 	end
 end
 
-function wrap(func, wrapper)
+function luautil:wrap(func, wrapper)
 	return function()
 		return wrapper(func)
 	end
 end
 
 -- TODO: finish this
-function compose(...)
+function luautil:compose(...)
 	local funcs = arg
 	return function()
 		local args = {}
@@ -417,7 +540,7 @@ function compose(...)
 end
 
 -- FIXME: wont execute just like delay
-function after(times, func)
+function luautil:after(times, func)
 	if times <= 0 then
 		return func()
 	end
@@ -430,7 +553,7 @@ function after(times, func)
 	end
 end
 
-function keys(obj)
+function luautil:keys(obj)
 	if not is_table(obj) then
 		obj = totable(obj)
 	end
@@ -443,15 +566,15 @@ function keys(obj)
 	return key
 end
 
-function values(obj)
+function luautil:values(obj)
 	print("values")
 end
 
-function functions(obj)
+function luautil:functions(obj)
 	print("functions")
 end
 
-function extend(...)
+function luautil:extend(...)
 	local args = initial(arg)
 	each(args, function(inkeys, initems)
 		for keys, items in pairs(initems) do
@@ -463,11 +586,11 @@ function extend(...)
 	return args[1]
 end
 
-function pick(...)
+function luautil:pick(...)
 	print("pick")
 end
 
-function defaults(...)
+function luautil:defaults(...)
 	local args = initial(arg)
 	each(args, function(inkeys, initems)
 		for keys, items in pairs(initems) do
@@ -479,48 +602,48 @@ function defaults(...)
 	return args[1]
 end
 
-function clone(obj)
+function luautil:clone(obj)
 	print("clone")
 end
 
 -- TODO: test this
-function tap(obj, interceptor)
+function luautil:tap(obj, interceptor)
 	interceptor(obj)
 	return obj
 end
 
 -- TODO: finish this
-function eq(a, b, stack)
+function luautil:eq(a, b, stack)
 	if a == b then return a ~= 0 or 1 / a == 1 / b end
 	if a == nil or b == nil then return a == b end
 end
 
-function is_equal(a, b)
+function luautil:is_equal(a, b)
 	return eq(a, b, {})
 end
 
 -- TODO: finish this
-function is_empty(obj)
+function luautil:is_empty(obj)
 	if obj == nil then return true end
 end
 
-function is_table(obj)
+function luautil:is_table(obj)
 	return type(obj) == "table"
 end
 
-function is_function(obj)
+function luautil:is_function(obj)
 	return type(obj) == "function"
 end
 
-function is_string(obj)
+function luautil:is_string(obj)
 	return type(obj) == "string"
 end
 
-function is_number(obj)
+function luautil:is_number(obj)
 	return type(obj) == "number"
 end
 
-function is_nil(obj)
+function luautil:is_nil(obj)
 	if not obj then
 		return true
 	else
@@ -528,7 +651,7 @@ function is_nil(obj)
 	end
 end
 
-function is_true(obj)
+function luautil:is_true(obj)
 	if obj then
 		return true
 	else
@@ -536,23 +659,23 @@ function is_true(obj)
 	end
 end
 
-function is_boolean(obj)
+function luautil:is_boolean(obj)
 	return type(obj) == "boolean"
 end
 
-function is_userdata(obj)
+function luautil:is_userdata(obj)
 	return type(obj) == "userdata"
 end
 
-function is_thread(obj)
+function luautil:is_thread(obj)
 	return type(obj) == "thread"
 end
 
-function is_undefined(obj)
+function luautil:is_undefined(obj)
 	return obj == '' or ""
 end
 
-function has(obj, key)
+function luautil:has(obj, key)
 	if not is_table(obj) then return false end
 	for keys, item in pairs(obj) do
 		if keys == key then
@@ -563,17 +686,17 @@ function has(obj, key)
 	end
 end
 
-function identity(value)
+function luautil:identity(value)
 	return value
 end
 
-function times(n, iterator)
+function luautil:times(n, iterator)
 	for keys, items in pairs(range(n)) do
 		iterator()
 	end
 end
 
-function result(object, property)
+function luautil:result(object, property)
 	if not object then return nil end
 	local value = object[property]
 	if is_function(value) then
@@ -583,15 +706,15 @@ function result(object, property)
 	end
 end
 
-function mixin(obj)
+function luautil:mixin(obj)
 	print("mixin")
 end
 
-function chain(obj)
+function luautil:chain(obj)
 	return obj
 end
 
-function reverse(obj)
+function luautil:reverse(obj)
 	local length = #obj
 	local results = {}
 	each(obj, function(keys, item)
@@ -600,7 +723,7 @@ function reverse(obj)
 	return results
 end
 
-function mean(obj, start)
+function luautil:mean(obj, start)
 	if not start then start = 0 end
 	local value = obj
 	if is_number(obj) then
@@ -616,7 +739,7 @@ function mean(obj, start)
 	return math.abs(results)
 end
 
-function slice(obj, start, stop)
+function luautil:slice(obj, start, stop)
 	if not stop then stop = #obj end
 	local steps = 0
 	if start < 0 then
@@ -636,7 +759,7 @@ function slice(obj, start, stop)
 	return obj
 end
 
-function arguments(args)
+function luautil:arguments(args)
 	for i,k in pairs(args) do
 		if type(k) == 'table' then
 			for key,item in pairs(k) do
